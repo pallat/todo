@@ -1,0 +1,10 @@
+version: '2'
+services:
+    mongodb:
+        image: mongo
+    app:
+      image: todo
+      links: 
+        - mongodb
+      ports:
+        - 1323:1323
