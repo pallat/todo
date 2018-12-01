@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"crypto/tls"
 	"log"
+	"net"
 	"net/http"
 	"strings"
 
@@ -12,8 +13,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var url = "mongodb://%s:27017"
-
 const database = "tech_inno"
 const collection = "test"
 
@@ -22,13 +21,19 @@ func main() {
 
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "."))
-	viper.SetDefault("mongodb", "localhost")
+	viper.SetDefault("url", "mongodb://localhost:27017")
 	port := viper.GetString("port")
+	url := viper.GetString("url")
 
-	url = fmt.Sprintf(url, viper.GetString("mongodb"))
-	fmt.Println(url)
+	tlsConfig := &tls.Config{InsecureSkipVerify: true}
 
-	session, err := mgo.Dial(url)
+	dialInfo, err := mgo.ParseURL(url)
+	dialInfo.DialServer = func(addr *mgo.ServerAddr) (net.Conn, error) {
+		return tls.Dial("tcp", addr.String(), tlsConfig)
+	}
+
+	session, err := mgo.DialWithInfo(dialInfo)
+
 	if err != nil {
 		log.Fatal(err)
 	}
